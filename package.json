@@ -1,0 +1,12 @@
+{
+  "name": "spoonfed",
+  "version": "0.0.0",
+  "description": "",
+  "main": "index.js",
+  "devDependencies": {
+    "gulp": "^3.8.10",
+    "gulp-connect": "^2.2.0"
+  },
+  "author": "",
+  "license": "ISC"
+}

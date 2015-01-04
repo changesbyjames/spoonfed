@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>SpoonFed</title>
+
+    <!--Link to the font Open Sans-->
+    <link href='http://fonts.googleapis.com/css?family=Open+Sans:400,300,700' rel='stylesheet' type='text/css'>
+
+    <link rel="stylesheet" type="text/css" href="css/base.css" />
+    <link rel="stylesheet" type="text/css" href="css/summary.css" />
+
+    <script src="bower_components/jquery/dist/jquery.js"></script>
+    <script src="bower_components/isotope/dist/isotope.pkgd.js"></script>
+    <script src="bower_components/underscore/underscore.js"></script>
+
+    <script type="text/javascript">
+
+        (function() {
+
+            var Spoonfed = function() {
+                this.news = {};
+            };
+
+            Spoonfed.prototype.fetch = function(newsSource) {
+                if(this.news[newsSource]) {
+                    return this.news[newsSource];
+                }
+                //request for rss feed to google
+                return $.ajax({
+                    type:       'GET',
+                    url:        'http://ajax.googleapis.com/ajax/services/feed/load?v=1.0&num=9&q=' + Spoonfed.sources[newsSource],
+                    dataType:   'jsonp'
+                })
+                //after the request
+                .then(function(data) //take the data and do stuff with it
+                 {
+                    this.news[newsSource] = data.responseData.feed.entries;
+                    console.log('entries:', this.news[newsSource]);
+                    return this.news[newsSource];
+                }.bind(this))
+                .then(function(articles //the data that's passed through
+                    ) {
+                    //the promises array
+                    var promises = [];
+                    //the request for summarisation
+                    function getSummary(article) {
+                        return $.ajax({
+                            url: "https://joanfihu-article-analysis-v1.p.mashape.com/link?entity_description=False&link=" + encodeURI(article.link),
+                            type: "GET",
+                            headers: {"X-Mashape-Key": "Ul1DH83LxvmshqXbCrkoyi6dEZX0p18mLJZjsn3gJ1NQuk9VEG"}
+                        }).then(function(summarised) {
+                            //doing stuff with the result
+                            article.summary = summarised.summary.join(' ');
+                            article.keywords = summarised.tags.join(',');
+                            //returning the data
+                            return articles;
+                        });
+                    }
+                    //the actual running of the getSummary, put into an array of promises
+                    articles.forEach(function(article) {
+                        promises.push(getSummary(article));
+                    });
+                    //when all of these have been resolved
+                    return $.when.apply($, promises);
+                    //do the next bit
+                }).then(function(articles) {
+                    var promisesArray = [];
+
+                    function getFlickrImage(article) {
+                        return $.getJSON('https://api.flickr.com/services/rest/?method=flickr.photos.search&api_key=25a70c36ed90ccaaec306db51793afdd&tags=' + article.keywords + '&format=json&per_page=1&jsoncallback=?')
+                            .then(function(imageData) {
+                                var firstPhoto = imageData.photos.photo[0];
+                                var id = firstPhoto.id;
+                                var farm = firstPhoto.farm;
+                                var server = firstPhoto.server;
+                                var secret = firstPhoto.secret;
+
+                                article.photoUrl = 'https://farm' + farm + '.staticflickr.com/' + server + '/' + id + '_' + secret + '.jpg';
+
+                                return articles;
+                            });
+                    }
+
+                    articles.forEach(function(article) {
+                        promisesArray.push(getFlickrImage(article));
+                    });
+                    console.log('promises', promisesArray);
+                    return $.when.apply($, promisesArray);
+                });
+            };
+
+            Spoonfed.sources = {
+                sky: 'http://feeds.skynews.com/feeds/rss/home.xml'
+            };
+
+            this.Spoonfed = Spoonfed;
+
+        }).apply(window)
+
+        $(function() {
+            var s = new Spoonfed();
+            s.fetch('sky').then(function(f) {
+                console.log('finally', f);
+            
+                var t = $("#articletemplate").text();
+                var mo = _.template(t);
+                var c1 = mo({articles: f});
+                $('#container').append(c1);
+            });
+        });
+
+        $('#container').isotope({
+            // options...
+            itemSelector: '.item',
+            masonry: {
+                columnWidth: 200
+            }
+        });
+        //I apologise for everything.
+
+        //Set feed to the RSS feed of skynews.
+        var feed = "http://feeds.skynews.com/feeds/rss/home.xml"
+        var summaries = [];
+        var photosurl = [];
+        var titles = [];
+        var articlecount;
+        //Sending the get request to the google feed API to read the feed and get the repsonse back in JSONp.
+
+        /*
+        $.ajax({
+            type: "GET",
+            url: "http://ajax.googleapis.com/ajax/services/feed/load?v=1.0&num=9&q=" + feed,
+            dataType:"jsonp",
+            //If successfull.
+            success: function(data) {
+                //set integer of how many articles there are to articlecount.
+                articlecount = data.responseData.feed.entries.length;
+                console.log(data);
+                for (var s = 0;s<data.responseData.feed.entries.length;s++){
+                    //Set the url of the article from the JSON response.
+                    var url = data.responseData.feed.entries[s].link;
+                    //Set the title of the article from the JSON response.
+                    var title = data.responseData.feed.entries[s].title;
+                    //Sending the get request to the Summary API to summarise the article and get the response back in JSONp.
+
+                    (function(title, url) {
+                        $.ajax({
+                            url: "https://tldr.p.mashape.com/summary?url=" + encodeURI(url),
+                            type: "GET",
+                            //Ul1DH83LxvmshqXbCrkoyi6dEZX0p18mLJZjsn3gJ1NQuk9VEG
+                            headers: {"X-Mashape-Key": "Ul1DH83LxvmshqXbCrkoyi6dEZX0p18mLJZjsn3gJ1NQuk9VEG"},
+                            //If successfull.
+                            success: function(data) {
+                                //Set the summary variable to the ~250 word summary in the JSON response.
+                                summary = data.data.summary;
+                                summaries.push(summary);
+                                //set the photoword variable to all of the returned keywords, comma-delimited.
+                                photoword = "";
+                                for (var p=0;p<data.data.keywords.length;p++){
+                                    photoword += data.data.keywords[p];
+                                    if (!(p+1 == data.data.keywords.length)) photoword += ",";
+                                }
+                                //Sending the get request to the flickr API to get an image appropriate for the article using the photoword variable.
+                                $.getJSON('https://api.flickr.com/services/rest/?method=flickr.photos.search&api_key=25a70c36ed90ccaaec306db51793afdd&tags=' + photoword + '&format=json&per_page=1&jsoncallback=?', function (data) {
+                                    console.log(data);
+
+                                    var $newItem, $container;
+
+                                    //parsing the JSON reponse for the properies of the photo.
+                                    id = (data.photos.photo[0].id);
+                                    farm = (data.photos.photo[0].farm);
+                                    server = (data.photos.photo[0].server);
+                                    secret = (data.photos.photo[0].secret);
+                                    console.log(id, farm, server, secret);
+                                    //Constucting the URL from the properties.
+                                    photourl = "https://farm" + farm + ".staticflickr.com/" + server + "/" + id + "_" + secret + ".jpg";
+                                    photosurl.push(photourl);
+                                    //make the
+
+                                    newItem = $("<div/>")
+                                            .attr("class", "item")
+                                            .append(
+                                            $("<a/>")
+                                                    .attr({
+                                                        "class": "link",
+                                                        "target": "_blank",
+                                                        "href": url
+                                                    })
+                                                    .append(
+                                                    $("<div/>")
+                                                            .attr("class", "item-header")
+                                                            .append(
+                                                            $("<h1/>")
+                                                                    .attr("class","headertext")
+                                                                    .text(title)
+                                                    )
+                                            ),
+                                            $("<p/>")
+                                                    .text(summary),
+                                            $("<div/>")
+                                                    .attr("class", "blurred")
+                                                    .css("background-image", "url(" + photourl + ")")
+
+                                    );
+
+                                    $container = $("#container");
+
+                                    $container.isotope()
+                                            .append( newItem )
+                                            .isotope( 'appended', newItem )
+                                            .isotope('layout');
+                                });
+                            }
+                        });
+                    }(title, url))
+                }
+            }
+        });
+        */
+    </script>
+    <script type="text/template" id="articletemplate">
+    <% _.each(articles, function(article) { %>
+
+    <div class="item">
+      <a href="<%= article.link %>" target="_blank">
+        <div class="item-header">
+          <h1><%= article.title %></h1>
+        </div>
+      </a>
+      <p><%= article.summary %></p>
+      <div class="blurred" style="background-image:url(<%= article.photoUrl %>)">
+      </div>
+    </div>
+    <%}); %>
+    </script>
+</head>
+<body>
+    <header>
+        <div class="toggles">
+            <!--Toggles for which articles are shown-->
+            <button class="bbctoggle">
+                BBC
+            </button>
+            <button class="skytoggle">
+                Sky
+            </button>
+            <button class="guardiantoggle">
+                Guardian
+            </button>
+        </div>
+        <!--SpoonFed image-->
+        <div class="headerimage">
+            <img src="images/spoonfedheader.svg" width="200px">
+        </div>
+
+    </header>
+    <!--Main area of the page-->
+    <div class="main">
+        <div id="container"></div>
+    </div>
+    <footer>
+        <div class="footerimage">
+            <img src="images/spoonfedfooter.svg" width="80px">
+        </div>
+    </footer>
+</body>
+</html>
