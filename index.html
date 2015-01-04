@@ -106,6 +106,7 @@
                 var mo = _.template(t);
                 var c1 = mo({articles: f});
                 $('#container').append(c1);
+                $('.spinner').hide();
             });
         });
 
@@ -256,8 +257,11 @@
     </header>
     <!--Main area of the page-->
     <div class="main">
-        <div id="container"></div>
-    </div>
+        <div id="container">
+        <div class="spinner">
+            <img src="images/ajax-loader-2.gif">
+        </div>
+        </div>
     <footer>
         <div class="footerimage">
             <img src="images/spoonfedfooter.svg" width="80px">

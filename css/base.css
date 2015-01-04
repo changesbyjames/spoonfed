@@ -13,17 +13,6 @@ body>.main {
     min-height: 100%;
 }
 
-/*
-.footer {
-    clear:both;
-    position:relative;
-    z-index:10;
-    height:5em;
-    margin-top:-3em;
-    width:100%
-}
-*/
-
 .footerimage {
     margin:0 auto;
     position:relative;
@@ -32,7 +21,7 @@ body>.main {
 }
 
 .main {
-    width:100%
+    width:100%;
 }
 
 .headerimage {
@@ -44,6 +33,12 @@ body>.main {
 
 .toggles {
     width:100px
+}
+.spinner {
+    width:31px;
+    margin: auto;
+    z-index: 100;
+    margin-top: 20px;
 }
 
 header {
