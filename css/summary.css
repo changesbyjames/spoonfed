@@ -76,4 +76,5 @@ h1{
     margin: auto;
     max-width: 900px;
     width: 100vw;
+    min-height: 100vh;
 }
