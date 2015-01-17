@@ -2,9 +2,10 @@
 <html>
 <head>
     <title>SpoonFed</title>
+    <meta name=viewport content="width=device-width, initial-scale=1">
 
     <!--Link to the font Open Sans-->
-    <link href='http://fonts.googleapis.com/css?family=Open+Sans:400,300,700' rel='stylesheet' type='text/css'>
+    <link href='http://fonts.googleapis.com/css?family=Open+Sans:400,300,700,600italic' rel='stylesheet' type='text/css'>
 
     <link rel="stylesheet" type="text/css" href="css/base.css" />
     <link rel="stylesheet" type="text/css" href="css/summary.css" />
@@ -13,6 +14,7 @@
     <script src="bower_components/isotope/dist/isotope.pkgd.js"></script>
     <script src="bower_components/underscore/underscore.js"></script>
 
+<<<<<<< Updated upstream
     <script type="text/javascript">
 
         (function() {
@@ -109,6 +111,12 @@
                 $('.spinner').hide();
             });
         });
+=======
+<script type="text/javascript">
+        if( /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) ) {
+            $('.item').css("margin", "auto");
+        }
+>>>>>>> Stashed changes
 
         $('#container').isotope({
             // options...
@@ -117,26 +125,114 @@
                 columnWidth: 200
             }
         });
-        //I apologise for everything.
+        var $container = $("#container");
 
-        //Set feed to the RSS feed of skynews.
-        var feed = "http://feeds.skynews.com/feeds/rss/home.xml"
-        var summaries = [];
-        var photosurl = [];
-        var titles = [];
-        var articlecount;
-    </script>
+
+var getFeedURLs = function(feed, id) {
+     console.log(id);
+      return $.ajax({
+            url: "http://ajax.googleapis.com/ajax/services/feed/load?v=1.0&num=10&q=" + feed,
+            type: "GET",
+            dataType: "jsonp"
+            })
+          .then(function(data) {
+            data.responseData.feed.entries.ios = id;
+            return data.responseData.feed.entries;
+          });
+}
+var summarise = function(data){
+      return $.ajax({
+    url: "https://joanfihu-article-analysis-v1.p.mashape.com/link?entity_description=False&link=" + encodeURI(data.link),
+    type: "GET",
+    headers: {"X-Mashape-Key": "Ul1DH83LxvmshqXbCrkoyi6dEZX0p18mLJZjsn3gJ1NQuk9VEG"}
+      })
+      .then(function(callback) {
+        data.summary = callback.summary.join(' ');
+        data.keywords = callback.tags;
+        data.photourl = callback.image;
+        return data;
+      }); 
+}
+var getFlickr = function(data){
+
+      return $.getJSON("https://api.flickr.com/services/rest/?method=flickr.photos.search&api_key=25a70c36ed90ccaaec306db51793afdd&tags=" + data.keywords.join(',') + "&format=json&per_page=1&jsoncallback=?")
+      .then(function(callback) {
+        id = (callback.photos.photo[0].id);
+        farm = (callback.photos.photo[0].farm);
+        server = (callback.photos.photo[0].server);
+        secret = (callback.photos.photo[0].secret);
+        photourl = "https://farm" + farm + ".staticflickr.com/" + server + "/" + id + "_" + secret + ".jpg";
+        data.photourl = photourl;
+        return data;
+      });
+}
+var buildArticle = function(data) {
+    var array = [];
+    array.push(data);
+    var t = $("#articletemplate").text();
+    var mo = _.template(t);
+    var newItem = mo({articles: array});
+    $('#container').append(newItem);
+}
+var cleanUp = function(data) {
+    delete data.mediaGroups;
+    delete data.author;
+    delete data.publishedDate;
+    delete data.content;
+    delete data.contentSnippet;
+    delete data.__proto__;
+    delete data.categories;
+    return data;
+
+}
+    var getAricles = function(feed, id){
+    getFeedURLs(feed, id)
+    .then(function(data) {
+        var l = data.length;
+        for (var o=0;o<l;o++){
+            data[o].ios = data.ios;
+            summarise(data[o])
+            .then(buildArticle)
+            .then(check);
+        }
+    });
+}
+
+var clear = function(){
+    $('#container').empty();
+}
+var check = function(){
+    if( !$.trim( $('#container').html() ).length ) {
+        console.log('almost')
+    }else{
+        $('.spinner').hide();
+    }      
+}
+        var articles = [];
+        var feed = ["http://feeds.bbci.co.uk/news/politics/rss.xml","http://feeds.bbci.co.uk/news/science_and_environment/rss.xml","http://feeds.bbci.co.uk/news/technology/rss.xml","http://feeds.bbci.co.uk/news/rss.xml"];
+        var id = ["politics", "science", "technology","World"];
+        getAricles(feed[3], id[3]);
+        getAricles(feed[0], id[0]);
+        getAricles(feed[1], id[1]);
+        getAricles(feed[2], id[2]);
+
+
+</script>
     <script type="text/template" id="articletemplate">
     <% _.each(articles, function(article) { %>
 
     <div class="item">
+    <div class="catagory" id="<%= article.ios %>">
+    <h1><%= article.ios %></h1></div>
+    <div class="photos" style='background-image:url("<%= article.photourl %>"); background-size: cover;'>
+    </div>
+    <p style="text-align:center;">
       <a href="<%= article.link %>" target="_blank">
-        <div class="item-header">
-          <h1><%= article.title %></h1>
-        </div>
+        <%= article.title %>
       </a>
-      <p><%= article.summary %></p>
-      <div class="blurred" style="background-image:url(<%= article.photoUrl %>)">
+    </p>
+    <p><%= article.summary %></p>
+      <div id="this">
       </div>
     </div>
     <%}); %>
@@ -144,25 +240,11 @@
 </head>
 <body>
     <header>
-        <div class="toggles">
-            <!--Toggles for which articles are shown-->
-            <button class="bbctoggle">
-                BBC
-            </button>
-            <button class="skytoggle">
-                Sky
-            </button>
-            <button class="guardiantoggle">
-                Guardian
-            </button>
-        </div>
-        <!--SpoonFed image-->
         <div class="headerimage">
-            <img src="images/spoonfedheader.svg" width="200px">
+            <img src="images/spoonfedheader-01.png" width="250px">
         </div>
 
     </header>
-    <!--Main area of the page-->
     <div class="main">
         <div id="container">
         <div class="spinner">

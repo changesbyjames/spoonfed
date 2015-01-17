@@ -27,8 +27,7 @@ body>.main {
 .headerimage {
     margin:0 auto;
     position:relative;
-    width:200px;
-    top:-60px
+    width:250px;
 }
 
 .toggles {
@@ -42,13 +41,13 @@ body>.main {
 }
 
 header {
-    width:100%;
+    width:100vw;
     height:80px;
     background-color:#29ABE2;
-    position:absolute;
+    position: fixed;
     padding-top:3px;
     padding-bottom:3px;
-    min-width:450px
+    z-index: 100;
 }
 
 .bbctoggle,.skytoggle,.guardiantoggle {
@@ -69,7 +68,6 @@ header {
     width:100px
 }
 
-h1 {
-    margin:5px;
-    padding-top:2px
+h1, a {
+
 }
