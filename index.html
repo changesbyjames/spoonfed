@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html>
+<html manifest="/cache.manifest">
 <head>
     <title>SpoonFed</title>
     <meta name=viewport content="width=device-width, initial-scale=1">
@@ -20,6 +20,8 @@
         if( /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) ) {
             $('.item').css("margin", "auto");
         }
+
+$.ajaxSetup({cache:true});
 
 var getFeedURLs = function(feed, id) {
      console.log(id);
@@ -146,7 +148,7 @@ var check = function(){
         </div>
     <footer>
         <div class="footerimage">
-            <img src="images/spoonfedfooter.svg" width="80px">
+            <img src="images/spoonfedfooter.png" width="80px">
         </div>
     </footer>
 </body>

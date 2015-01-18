@@ -1,0 +1,16 @@
+CACHE MANIFEST
+# Cache manifest version 0.0.16
+CACHE:
+/offline.html
+/images/spoonfedheader-01.png
+/images/spoonfedfooter.png
+/images/ajax-loader-2.gif
+/images/cat.jpeg
+/css/base.css
+/css/summary.css
+/cache.manifest
+NETWORK:
+*
+/index.html
+FALLBACK:
+/ /offline.html
