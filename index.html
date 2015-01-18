@@ -6,7 +6,7 @@
 
     <!--Link to the font Open Sans-->
     <link href='http://fonts.googleapis.com/css?family=Open+Sans:400,300,700,600italic' rel='stylesheet' type='text/css'>
-
+    <link rel="apple-touch-icon" href="/spoonfedfooter.png">
     <link rel="stylesheet" type="text/css" href="css/base.css" />
     <link rel="stylesheet" type="text/css" href="css/summary.css" />
 
@@ -18,6 +18,19 @@
         if( /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) ) {
             $('.item').css("margin", "auto");
         }
+<<<<<<< Updated upstream
+=======
+
+        $('#container').isotope({
+            // options...
+            itemSelector: '.item',
+            masonry: {
+                columnWidth: 200
+            }
+        });
+        var $container = $("#container");
+
+>>>>>>> Stashed changes
 
 var getFeedURLs = function(feed, id) {
      console.log(id);
