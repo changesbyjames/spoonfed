@@ -1,118 +1,111 @@
 <!DOCTYPE html>
+<!--Apologies for the excessive commenting-->
+<!--Starting the caching process-->
 <html manifest="/cache.manifest">
 <head>
     <title>SpoonFed</title>
+    <!--Mobile scaling options-->
     <meta name=viewport content="width=device-width, initial-scale=1">
+    <!--Stating that it is web app capable for iOS devices-->
     <meta name="apple-mobile-web-app-capable" content="yes">
 
 
     <!--Link to the font Open Sans-->
     <link href='http://fonts.googleapis.com/css?family=Open+Sans:400,300,700,600italic' rel='stylesheet' type='text/css'>
+    <!--Apple home screen webapp icon-->
     <link rel="apple-touch-icon" href="images/apple-touch-icon.png">
+    <!--Referencing css files-->
     <link rel="stylesheet" type="text/css" href="css/base.css" />
     <link rel="stylesheet" type="text/css" href="css/summary.css" />
-
+    <!--Referencing plugins-->
     <script src="bower_components/jquery/dist/jquery.js"></script>
     <script src="bower_components/isotope/dist/isotope.pkgd.js"></script>
     <script src="bower_components/underscore/underscore.js"></script>
 
 <script type="text/javascript">
-        if( /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) ) {
-            $('.item').css("margin", "auto");
+//Function declaration
+        var getFeedURLs = function(feed, id) {
+            //GET request to the Google API RSS reader.
+              return $.ajax({
+                    url: "http://ajax.googleapis.com/ajax/services/feed/load?v=1.0&num=10&q=" + feed,
+                    type: "GET",
+                    dataType: "jsonp"
+                    })
+                  .then(function(data) {
+                    //pass on the id to this article object
+                    data.responseData.feed.entries.ios = id;
+                    //return the article object
+                    return data.responseData.feed.entries;
+                  });
         }
 
-$.ajaxSetup({cache:true});
-
-var getFeedURLs = function(feed, id) {
-     console.log(id);
-      return $.ajax({
-            url: "http://ajax.googleapis.com/ajax/services/feed/load?v=1.0&num=10&q=" + feed,
+        var summarise = function(data){
+            //GET request to the summarisation API
+            //data.link is the url of the article
+              return $.ajax({
+            url: "https://joanfihu-article-analysis-v1.p.mashape.com/link?entity_description=False&link=" + encodeURI(data.link),
             type: "GET",
-            dataType: "jsonp"
-            })
-          .then(function(data) {
-            data.responseData.feed.entries.ios = id;
-            return data.responseData.feed.entries;
-          });
-}
-var summarise = function(data){
-      return $.ajax({
-    url: "https://joanfihu-article-analysis-v1.p.mashape.com/link?entity_description=False&link=" + encodeURI(data.link),
-    type: "GET",
-    headers: {"X-Mashape-Key": "Ul1DH83LxvmshqXbCrkoyi6dEZX0p18mLJZjsn3gJ1NQuk9VEG"}
-      })
-      .then(function(callback) {
-        data.summary = callback.summary.join(' ');
-        data.keywords = callback.tags;
-        data.photourl = callback.image;
-        return data;
-      }); 
-}
-var getFlickr = function(data){
-
-      return $.getJSON("https://api.flickr.com/services/rest/?method=flickr.photos.search&api_key=25a70c36ed90ccaaec306db51793afdd&tags=" + data.keywords.join(',') + "&format=json&per_page=1&jsoncallback=?")
-      .then(function(callback) {
-        id = (callback.photos.photo[0].id);
-        farm = (callback.photos.photo[0].farm);
-        server = (callback.photos.photo[0].server);
-        secret = (callback.photos.photo[0].secret);
-        photourl = "https://farm" + farm + ".staticflickr.com/" + server + "/" + id + "_" + secret + ".jpg";
-        data.photourl = photourl;
-        return data;
-      });
-}
-var buildArticle = function(data) {
-    var array = [];
-    array.push(data);
-    var t = $("#articletemplate").text();
-    var mo = _.template(t);
-    var newItem = mo({articles: array});
-    $('#container').append(newItem);
-}
-var cleanUp = function(data) {
-    delete data.mediaGroups;
-    delete data.author;
-    delete data.publishedDate;
-    delete data.content;
-    delete data.contentSnippet;
-    delete data.__proto__;
-    delete data.categories;
-    return data;
-
-}
-    var getAricles = function(feed, id){
-    getFeedURLs(feed, id)
-    .then(function(data) {
-        var l = data.length;
-        for (var o=0;o<l;o++){
-            data[o].ios = data.ios;
-            summarise(data[o])
-            .then(buildArticle)
-            .then(check);
+            headers: {"X-Mashape-Key": "Ul1DH83LxvmshqXbCrkoyi6dEZX0p18mLJZjsn3gJ1NQuk9VEG"}
+              })
+              .then(function(callback) {
+                data.summary = callback.summary.join(' ');
+                data.keywords = callback.tags;
+                data.photourl = callback.image;
+                return data;
+              }); 
         }
-    });
-}
 
-var clear = function(){
-    $('#container').empty();
-}
-var check = function(){
-    if( !$.trim( $('#container').html() ).length ) {
-        console.log('almost')
-    }else{
-        $('.spinner').hide();
-    }      
-}
-        var articles = [];
-        var feed = ["http://feeds.bbci.co.uk/news/politics/rss.xml","http://feeds.bbci.co.uk/news/science_and_environment/rss.xml","http://feeds.bbci.co.uk/news/technology/rss.xml","http://feeds.bbci.co.uk/news/rss.xml"];
-        var id = ["politics", "science", "technology","World"];
-        getAricles(feed[3], id[3]);
-        getAricles(feed[0], id[0]);
-        getAricles(feed[1], id[1]);
-        getAricles(feed[2], id[2]);
+        var buildArticle = function(data) {
+            //finding the template and setting it to t
+            var t = $("#articletemplate").text();
+            //formatting the template into an object
+            var mo = _.template(t);
+            //substituting article object into template object
+            var newItem = mo({articles: array});
+            //adding the item to the page
+            $('#container').append(newItem);
+        }
+            var getAricles = function(feed, id){
+            getFeedURLs(feed, id)
+            .then(function(data) {
+                var l = data.length;
+                for (var o=0;o<l;o++){
+                    data[o].ios = data.ios;
+                    summarise(data[o])
+                    .then(buildArticle)
+                    .then(check);
+                }
+            });
+        }
+
+        var clear = function(){
+            //reseting the articles
+            $('#container').empty();
+        }
+        var check = function(){
+            //if container has anything in it hide the spinner
+            if( !$.trim( $('#container').html() ).length ) {
+                console.log('almost')
+            }else{
+                $('.spinner').hide();
+            }      
+        }
+
+
+//decloration of the rss feed urls
+var feed = ["http://feeds.bbci.co.uk/news/politics/rss.xml","http://feeds.bbci.co.uk/news/science_and_environment/rss.xml","http://feeds.bbci.co.uk/news/technology/rss.xml","http://feeds.bbci.co.uk/news/rss.xml"];
+//decloration of catagory ids
+var id = ["politics", "science", "technology","World"];
+
+//calling the starting function 
+getAricles(feed[3], id[3]);
+getAricles(feed[0], id[0]);
+getAricles(feed[1], id[1]);
+getAricles(feed[2], id[2]);
 
 
 </script>
+    <!--HTML Templating template-->
     <script type="text/template" id="articletemplate">
     <% _.each(articles, function(article) { %>
 
@@ -133,6 +126,8 @@ var check = function(){
     <%}); %>
     </script>
 </head>
+
+
 <body>
     <header>
         <div class="headerimage">
