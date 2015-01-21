@@ -65,7 +65,7 @@
             //adding the item to the page
             $('#container').append(newItem);
         }
-            var getAricles = function(feed, id){
+            var getArticles = function(feed, id){
             getFeedURLs(feed, id)
             .then(function(data) {
                 var l = data.length;
@@ -98,10 +98,10 @@ var feed = ["http://feeds.bbci.co.uk/news/politics/rss.xml","http://feeds.bbci.c
 var id = ["politics", "science", "technology","World"];
 
 //calling the starting function 
-getAricles(feed[3], id[3]);
-getAricles(feed[0], id[0]);
-getAricles(feed[1], id[1]);
-getAricles(feed[2], id[2]);
+getArticles(feed[3], id[3]);
+getArticles(feed[0], id[0]);
+getArticles(feed[1], id[1]);
+getArticles(feed[2], id[2]);
 
 
 </script>
