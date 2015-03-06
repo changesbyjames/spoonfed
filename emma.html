@@ -1,1 +1,149 @@
+<!DOCTYPE html>
+<!--Apologies for the excessive commenting-->
+<!--Starting the caching process-->
+<html manifest="/cache.manifest">
+<head>
+    <title>SpoonFed</title>
+    <!--Mobile scaling options-->
+    <meta name=viewport content="width=device-width, initial-scale=1">
+    <!--Stating that it is web app capable for iOS devices-->
+    <meta name="apple-mobile-web-app-capable" content="yes">
+
+
+    <!--Link to the font Open Sans-->
+    <link href='http://fonts.googleapis.com/css?family=Open+Sans:400,300,700,600italic' rel='stylesheet' type='text/css'>
+    <!--Apple home screen webapp icon-->
+    <link rel="apple-touch-icon" href="images/apple-touch-icon.png">
+    <!--Referencing css files-->
+    <link rel="stylesheet" type="text/css" href="css/base.css" />
+    <link rel="stylesheet" type="text/css" href="css/summary.css" />
+    <!--Referencing plugins-->
+    <script src="bower_components/jquery/dist/jquery.js"></script>
+    <script src="bower_components/isotope/dist/isotope.pkgd.js"></script>
+    <script src="bower_components/underscore/underscore.js"></script>
+
+<script type="text/javascript">
+//Function declaration
+        var getFeedURLs = function(feed, id) {
+            //GET request to the Google API RSS reader.
+              return $.ajax({
+                    url: "http://ajax.googleapis.com/ajax/services/feed/load?v=1.0&num=10&q=" + feed,
+                    type: "GET",
+                    dataType: "jsonp"
+                    })
+                  .then(function(data) {
+                    //pass on the id to this article object
+                    data.responseData.feed.entries.ios = id;
+                    //return the article object
+                    return data.responseData.feed.entries;
+                  });
+        }
+
+        var summarise = function(data){
+            //GET request to the summarisation API
+            //data.link is the url of the article
+              return $.ajax({
+            url: "https://joanfihu-article-analysis-v1.p.mashape.com/link?entity_description=False&link=" + encodeURI(data.link),
+            type: "GET",
+            headers: {"X-Mashape-Key": "Ul1DH83LxvmshqXbCrkoyi6dEZX0p18mLJZjsn3gJ1NQuk9VEG"}
+              })
+              .then(function(callback) {
+                data.summary = callback.summary.join(' ');
+                data.keywords = callback.tags;
+                data.photourl = callback.image;
+                return data;
+              }); 
+        }
+
+        var buildArticle = function(data) {
+            var array = [];
+            array.push(data);
+            //finding the template and setting it to t
+            var t = $("#articletemplate").text();
+            //formatting the template into an object
+            var mo = _.template(t);
+            //substituting article object into template object
+            var newItem = mo({articles: array});
+            //adding the item to the page
+            $('#container').append(newItem);
+        }
+            var getArticles = function(feed, id){
+            getFeedURLs(feed, id)
+            .then(function(data) {
+                var l = data.length;
+                for (var o=0;o<l;o++){
+                    data[o].ios = data.ios;
+                    summarise(data[o])
+                    .then(buildArticle)
+                    .then(check);
+                }
+            });
+        }
+
+        var clear = function(){
+            //reseting the articles
+            $('#container').empty();
+        }
+        var check = function(){
+            //if container has anything in it hide the spinner
+            if( !$.trim( $('#container').html() ).length ) {
+                console.log('almost')
+            }else{
+                $('.spinner').hide();
+            }      
+        }
+
+
+//decloration of the rss feed urls
+var feed = ["http://feeds.feedburner.com/daily-star-Fashion-Beauty?format=xml","http://feeds.bbci.co.uk/news/business/economy/rss.xml"];
+//decloration of catagory ids
+var id = ["entertainment", "science", "technology","world"];
+
+//calling the starting function 
+getArticles(feed[0], id[0]);
+getArticles(feed[1], id[1]);
+
+
+</script>
+    <!--HTML Templating template-->
+    <script type="text/template" id="articletemplate">
+    <% _.each(articles, function(article) { %>
+
+    <div class="item">
+    <div class="photos" style='background-image:url("<%= article.photourl %>"); background-size: cover;'>
+    </div>
+    <p style="text-align:center;">
+      <a href="<%= article.link %>" target="_blank">
+        <%= article.title %>
+      </a>
+    </p>
+    <p><%= article.summary %></p>
+      <div id="this">
+      </div>
+    </div>
+    <%}); %>
+    </script>
+</head>
+
+
+<body>
+    <header>
+        <div class="headerimage">
+            <img src="images/spoonfedheader-01.png" width="250px">
+        </div>
+
+    </header>
+    <div class="main">
+        <div id="container">
+        <div class="spinner">
+            <img src="images/ajax-loader-2.gif" width="31px">
+        </div>
+        </div>
+    <footer>
+        <div class="footerimage">
+            <img src="images/spoonfedfooter.png" width="80px">
+        </div>
+    </footer>
+</body>
+</html>
 
